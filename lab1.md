@@ -1,8 +1,8 @@
 # Lab 1: GoDB
 
-**Assigned:** Tuesday January 28, 2025
+**Assigned:** Thursday January 22, 2026
 
-**Due:** Thursday February 13, 2025 by 11:59 PM MT
+**Due:** Tuesday February 10, 2026 by 11:59 PM MT
 
 <!--
 **Bug Update:** We have a [page](bugs.html) to keep track
