@@ -1,8 +1,8 @@
 # Lab 2: GoDB Operators
 
-**Assigned:** Monday February 24, 2025
+**Assigned:** Tuesday February 17, 2026
 
-**Due:** Friday March 7, 2025 by 11:59 PM
+**Due:** Friday March 3, 2026 by 11:59 PM
 
 In this lab assignment, you will write a set of operators for GoDB to
 implement table modifications (e.g., insert and delete records), filters,
