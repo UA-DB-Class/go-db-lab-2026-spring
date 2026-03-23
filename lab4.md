@@ -1,9 +1,9 @@
 
 # Lab 4: GoDB Transactions
 
-**Assigned:**  Thursday March 20, 2025
+**Assigned:**  Tuesday March 24, 2026
 
-**Due:**  Tuesday April 1, 2025 by 11:59 PM
+**Due:**  Thursday April 2, 2026 by 11:59 PM
 
 In this lab, you will implement a simple locking-based transaction system in GoDB. You will need to add lock and unlock calls at the appropriate places in your code, as well as code to track the locks held by each transaction and grant locks to transactions as they are needed.
 
@@ -25,7 +25,7 @@ To start Lab 4, there are two methods:
 
 2. Inside this directory, clone the repository by running the following command:
    ```
-   git clone https://github.com/UA-DB-Class/go-db-lab-2025-spring.git
+   git clone https://github.com/UA-DB-Class/go-db-lab-2026-spring.git
    ```
 
    The `godb` folder contains all the files you need for lab 4, including both the solution to lab1 and lab 2.
@@ -45,7 +45,7 @@ To start Lab 4, there are two methods:
 2. Inside this directory, clone the repository by running the following command:
 
    ```
-   git clone https://github.com/UA-DB-Class/go-db-lab-2025-spring.git
+   git clone https://github.com/UA-DB-Class/go-db-lab-2026-spring.git
    ```
 
    The `godb` folder contains all the files you need for lab 4, including both the solution to lab 1 and lab 2.
