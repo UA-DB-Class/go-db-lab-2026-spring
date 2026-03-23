@@ -1,9 +1,5 @@
 package godb
 
-import (
-	"fmt"
-)
-
 type EqualityJoin struct {
 	// Expressions that when applied to tuples from the left or right operators,
 	// respectively, return the value of the left or right side of the join
@@ -29,7 +25,33 @@ func NewJoin(left Operator, leftField Expr, right Operator, rightField Expr, max
 // HINT: use [TupleDesc.merge].
 func (hj *EqualityJoin) Descriptor() *TupleDesc {
 	// TODO: some code goes here
-	return nil
+	return (*hj.left).Descriptor().merge((*hj.right).Descriptor())
+
+	// return nil
+}
+
+func (joinOp *EqualityJoin) loadOuterBatch(n int, iter func() (*Tuple, error)) (map[DBValue]([]*Tuple), bool, error) {
+	hashmap := make(map[DBValue]([]*Tuple))
+	for {
+		if n == 0 {
+			return hashmap, false, nil
+		}
+		t, err := iter()
+		if err != nil {
+			return nil, false, err
+		}
+		if t == nil { //finished iterating - 2nd bool indicates we have exhausted the iterator
+			return hashmap, true, nil
+		}
+
+		v, err := joinOp.leftField.EvalExpr(t)
+		if err != nil {
+			return nil, false, err
+		}
+
+		hashmap[v] = append(hashmap[v], t)
+		n--
+	}
 }
 
 // Join operator implementation. This function should iterate over the results
@@ -51,5 +73,64 @@ func (hj *EqualityJoin) Descriptor() *TupleDesc {
 // loops join.
 func (joinOp *EqualityJoin) Iterator(tid TransactionID) (func() (*Tuple, error), error) {
 	// TODO: some code goes here
-	return nil, fmt.Errorf("join_op.Iterator not implemented")
+
+	//build map on the left
+	var hashmap map[DBValue]([]*Tuple)
+	var rightIter func() (*Tuple, error)
+	build_it, err := (*joinOp.left).Iterator(tid)
+	if err != nil {
+		return nil, err
+	}
+	var matches []*Tuple
+	var curT *Tuple
+	exhausted := false
+	curMatch := 0
+	needLoad := true
+
+	return func() (*Tuple, error) {
+		for {
+			if needLoad && exhausted {
+				return nil, nil
+			}
+			if needLoad {
+				hashmap, exhausted, err = joinOp.loadOuterBatch(joinOp.maxBufferSize, build_it)
+				if err != nil {
+					return nil, err
+				}
+				rightIter, err = (*joinOp.right).Iterator(tid)
+				if err != nil {
+					return nil, err
+				}
+				needLoad = false
+			}
+
+			for {
+				if curT == nil {
+					var err error
+					curT, err = rightIter()
+					if err != nil {
+						return nil, err
+					}
+					if curT == nil {
+						needLoad = true
+						break
+					}
+					v, err := joinOp.rightField.EvalExpr(curT)
+					if err != nil {
+						return nil, err
+					}
+					matches = hashmap[v]
+					curMatch = 0
+				}
+				if matches != nil && curMatch < len(matches) {
+					retT := joinTuples(matches[curMatch], curT)
+					curMatch++
+					return retT, nil
+				} else {
+					curT = nil
+				}
+			}
+		}
+	}, err
+	// return nil, fmt.Errorf("join_op.Iterator not implemented")
 }

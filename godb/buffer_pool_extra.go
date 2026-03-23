@@ -2,16 +2,15 @@ package godb
 
 import (
 	"fmt"
+	//<silentstrip lab5>
 	"io"
 	"log"
+	//</silentstrip>
 )
 
 // Rolls back a transaction by reading the log and undoing the changes made by
 // the transaction.
 func (bp *BufferPool) Rollback(tid TransactionID) error {
-	if bp.logFile == nil {
-		return fmt.Errorf("log file not initialized")
-	}
 
 	iter, err := bp.logFile.ReverseIterator()
 	if err != nil {
@@ -135,4 +134,5 @@ func (bp *BufferPool) Recover(logFile *LogFile) error {
 
 	// reset to end of log
 	return bp.logFile.seek(0, io.SeekEnd)
+
 }

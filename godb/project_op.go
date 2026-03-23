@@ -1,13 +1,14 @@
 package godb
 
-import "fmt"
-
 type Project struct {
 	selectFields []Expr // required fields for parser
 	outputNames  []string
 	child        Operator
 	//add additional fields here
 	// TODO: some code goes here
+
+	outDesc  TupleDesc
+	distinct bool
 }
 
 // Construct a projection operator. It saves the list of selected field, child,
@@ -18,7 +19,18 @@ type Project struct {
 // and child is the child operator.
 func NewProjectOp(selectFields []Expr, outputNames []string, distinct bool, child Operator) (Operator, error) {
 	// TODO: some code goes here
-	return nil, nil
+	if len(selectFields) != len(outputNames) {
+		return nil, GoDBError{IncompatibleTypesError, "output name list must have same number of fields as input list"}
+	}
+	outFields := make([]FieldType, len(selectFields))
+	//copy(outFields, selectFields)
+	for i, expr := range selectFields {
+		outFields[i].Ftype = expr.GetExprType().Ftype
+		outFields[i].Fname = outputNames[i]
+	}
+	return &Project{selectFields, outputNames, child, TupleDesc{outFields}, distinct}, nil
+
+	// return nil, nil
 }
 
 // Return a TupleDescriptor for this projection. The returned descriptor should
@@ -28,7 +40,9 @@ func NewProjectOp(selectFields []Expr, outputNames []string, distinct bool, chil
 // HINT: you can use expr.GetExprType() to get the field type
 func (p *Project) Descriptor() *TupleDesc {
 	// TODO: some code goes here
-	return nil
+	return &p.outDesc
+
+	// return nil
 
 }
 
@@ -39,6 +53,60 @@ func (p *Project) Descriptor() *TupleDesc {
 // distinct tuples seen so far. Note that support for the distinct keyword is
 // optional as specified in the lab 2 assignment.
 func (p *Project) Iterator(tid TransactionID) (func() (*Tuple, error), error) {
- // TODO: some code goes here
-	return nil, fmt.Errorf("project_op.Iterator not implemented")
+	// TODO: some code goes here
+	childIter, err := p.child.Iterator(tid)
+	if err != nil {
+		return nil, err
+	}
+	distinctState := make(map[any]*Tuple)
+	var distinctTups []*Tuple
+	didDistinct := false
+	curDistinct := 0
+	return func() (*Tuple, error) {
+		if (p.distinct && !didDistinct) || (!p.distinct) {
+			for {
+				tup, err := childIter()
+				if err != nil {
+					return nil, err
+				}
+				if tup == nil {
+					if p.distinct {
+						didDistinct = true
+						break
+					}
+					return nil, nil
+				}
+
+				outVals := make([]DBValue, len(p.selectFields))
+				for i := 0; i < len(p.selectFields); i++ {
+					outVals[i], err = p.selectFields[i].EvalExpr(tup)
+					if err != nil {
+						return nil, err
+					}
+				}
+				//outTup, err := tup.project(p.selectFields)
+				outTup := Tuple{p.outDesc, outVals, tup.Rid}
+
+				if p.distinct {
+					key := outTup.tupleKey()
+					distinctTup := (distinctState[key])
+					if distinctTup == nil {
+						distinctState[key] = &outTup
+						distinctTups = append(distinctTups, &outTup)
+					}
+				} else { //not distinct
+					return &outTup, nil
+				}
+			}
+		}
+		//distinct, iterating results
+		if curDistinct >= len(distinctTups) {
+			return nil, nil
+		}
+
+		tup := distinctTups[curDistinct]
+		curDistinct++
+		return tup, nil
+	}, nil
+	// return nil, fmt.Errorf("project_op.Iterator not implemented")
 }
